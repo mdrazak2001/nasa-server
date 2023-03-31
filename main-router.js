@@ -4,7 +4,7 @@ const User = require("./models/user.model.js");
 const passport = require("passport");
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-
+const session = require('express-session');
 router.get('/', function(req, res) {
     res.send('Hello, world!');
 });
@@ -23,16 +23,23 @@ router.get('/users', function(req, res, next) {
 router.post('/registerUser', async function(req, res) {
     const { name, email, password } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
+    const userCheck = await User.findOne({ email: email });     
+    if(userCheck) {
+      console.log('User already exists');
+      return res.status(400).send('User already exists');
+    }
     const user = new User({
         name: name,
         email: email,
         password: hashedPassword
     });
-    console.log(name, email, hashedPassword);     
-
+    console.log(name, email, hashedPassword);
+    
     try {
       const savedUser = await user.save();
-      res.json(savedUser);
+      const token = jwt.sign({ _id: user._id, name: user.name }, process.env.TOKEN_SECRET);
+      res.json({ token: token });
+
     } catch (err) {
       console.error(err);
       res.status(500).send('Error saving user');
@@ -59,24 +66,54 @@ router.post('/loginUser', async function(req, res) {
   console.log('Logged in successfully ', user);
   // Passwords match, so create and return a JWT token
   const token = jwt.sign({ _id: user._id }, process.env.TOKEN_SECRET);
-  res.json({ token: token });
-  
+  // res.json({ token: token });
+  return res.json({user: user, token: token});
   // res.json({ message: 'Logged in successfully', user: user });
 });
 
 router.get("/auth/google",
-  passport.authenticate("google", { scope: ["profile"] })
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+router.get(
+  "/auth/google/register",
+  passport.authenticate("google-register", { scope: ["profile", "email"] })
 );
 
 router.get("/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: "http://localhost:3000" }),
-  function(req, res) {
-    // Successful authentication, redirect secrets.
-    res.redirect("http://localhost:3000");
+  passport.authenticate("google", { failureRedirect: "http://localhost:3000?failure=UserNotRegistered" }),
+  async function(req, res) {
+    console.log("User idar:" + req.user)
+    const existingUser = await User.findOne({ googleId: req.user.googleId });
+    console.log("Existing user: " + existingUser);
+    if (existingUser) {
+      const token = jwt.sign({ _id: existingUser._id }, process.env.TOKEN_SECRET);
+      res.redirect("http://localhost:3000?user=" + existingUser.username+"&token="+token);
+    } else {
+      res.redirect("http://localhost:3000?failure=true");
+    }
   });
+router.get(
+  "/auth/google/register/callback",
+  passport.authenticate("google-register", {
+    failureRedirect: "http://localhost:3000?failure=ExistingUser",
+  }),
+  async function(req, res) {
+    console.log("User idar:" + req.user);
+    const existingUser = await User.findOne({ googleId: req.user.googleId });
+    const token = jwt.sign({ _id: existingUser._id }, process.env.TOKEN_SECRET);
+    res.redirect("http://localhost:3000?user=" + existingUser.username+"&token="+token);
+  }
+);
 
 router.get("/logout", function(req, res){
     res.redirect("http://localhost:3000/");
 });
-
+router.get('/profile', (req, res) => {
+  const user = req.session.user;
+  if (!user) {
+    return res.json({}); 
+  } else {
+    return res.json({ user: user });
+  }
+});
 module.exports = router;

@@ -31,12 +31,6 @@ app.use(express.urlencoded({
 app.use(cors());
 app.use('/', mainRouter);
 
-// app.use(
-//     cors({
-//       origin: "http://localhost:3000", // <-- location of the react app were connecting to
-//       credentials: true,
-//     })
-// );
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -50,32 +44,61 @@ passport.deserializeUser(function(id, done) {
     done(err, user);
   });
 });
-passport.use(new GoogleStrategy({
-    clientID: process.env.CLIENT_ID,
-    clientSecret: process.env.CLIENT_SECRET,
-    callbackURL: "http://localhost:5000/auth/google/callback",
-    userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo"
-  },
-  async function (accessToken, refreshToken, profile, done) {
-    try {
-      console.log(profile);
-      // Find or create user in your database
-      let user = await User.findOne({ googleId: profile.id });
-      if (!user) {
-        // Create new user in database
-        const username = Array.isArray(profile.emails) && profile.emails.length > 0 ? profile.emails[0].value.split('@')[0] : '';
-        const newUser = new User({
-          username: profile.displayName,
-          googleId: profile.id
-        });
-        user = await newUser.save();
-      }
+passport.use("google", new GoogleStrategy({
+  clientID: process.env.CLIENT_ID,
+  clientSecret: process.env.CLIENT_SECRET,
+  callbackURL: "http://localhost:5000/auth/google/callback",
+  userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
+  scope: ['profile', 'email']
+},
+async function (accessToken, refreshToken, profile, done) {
+  try {
+    console.log(profile);
+    // Find or create user in your database
+    let user = await User.findOne({ googleId: profile.id });
+    if (!user) {
       return done(null, user);
-    } catch (err) {
-      return done(err);
     }
+    return done(null, user);
+  } catch (err) {
+    return done(err);
   }
+}
 ));
+
+
+passport.use(
+  "google-register",
+  new GoogleStrategy(
+    {
+      clientID: process.env.CLIENT_ID,
+      clientSecret: process.env.CLIENT_SECRET,
+      callbackURL: "http://localhost:5000/auth/google/register/callback",
+      userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
+      scope: ["profile", "email"],
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        const user = await User.findOne({ googleId: profile.id  });
+        if (user) {
+          return done(null, false, {
+            message: "Email already registered",
+          });
+        } else {
+          const newUser = new User({
+            googleId: profile.id,
+            email: profile.emails[0].value,
+            username: profile.displayName,
+          });
+          await newUser.save();
+          return done(null, newUser);
+        }
+      } catch (error) {
+        return done(error);
+      }
+    }
+  )
+);
 
 
 const uri = process.env.ATLAS_URI;
