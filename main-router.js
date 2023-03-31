@@ -105,15 +105,15 @@ router.get(
   }
 );
 
-router.get("/logout", function(req, res){
-    res.redirect("http://localhost:3000/");
-});
-router.get('/profile', (req, res) => {
-  const user = req.session.user;
-  if (!user) {
-    return res.json({}); 
-  } else {
-    return res.json({ user: user });
-  }
+router.get('/api/image', async (req, res) => {
+  const date = new Date();
+  date.setDate(date.getDate() - 1);
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const apiUrl = `https://api.nasa.gov/planetary/apod?api_key=${process.env.NASA_API}&date=${year}-${month}-${day}`;
+  const response = await fetch(apiUrl);
+  const data = await response.json();
+  res.json(data);
 });
 module.exports = router;
