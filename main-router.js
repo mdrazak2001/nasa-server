@@ -81,28 +81,28 @@ router.get(
 );
 
 router.get("/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: "http://localhost:3000?failure=UserNotRegistered" }),
+  passport.authenticate("google", { failureRedirect: "https://nasa-ui.vercel.app?failure=UserNotRegistered" }),
   async function(req, res) {
     // console.log("User idar:" + req.user)
     const existingUser = await User.findOne({ googleId: req.user.googleId });
     console.log("Existing user: " + existingUser);
     if (existingUser) {
       const token = jwt.sign({ _id: existingUser._id }, process.env.TOKEN_SECRET);
-      res.redirect("http://localhost:3000?user=" + existingUser.username+"&token="+token);
+      res.redirect("https://nasa-ui.vercel.app?user=" + existingUser.username+"&token="+token);
     } else {
-      res.redirect("http://localhost:3000?failure=true");
+      res.redirect("https://nasa-ui.vercel.app?failure=true");
     }
   });
 router.get(
   "/auth/google/register/callback",
   passport.authenticate("google-register", {
-    failureRedirect: "http://localhost:3000?failure=ExistingUser",
+    failureRedirect: "https://nasa-ui.vercel.app?failure=ExistingUser",
   }),
   async function(req, res) {
     // console.log("User idar:" + req.user);
     const existingUser = await User.findOne({ googleId: req.user.googleId });
     const token = jwt.sign({ _id: existingUser._id }, process.env.TOKEN_SECRET);
-    res.redirect("http://localhost:3000?user=" + existingUser.username+"&token="+token);
+    res.redirect("https://nasa-ui.vercel.app?user=" + existingUser.username+"&token="+token);
   }
 );
 
