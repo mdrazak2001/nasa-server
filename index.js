@@ -47,7 +47,7 @@ passport.deserializeUser(async function(id, done) {
 passport.use("google", new GoogleStrategy({
   clientID: process.env.CLIENT_ID,
   clientSecret: process.env.CLIENT_SECRET,
-  callbackURL: "http://localhost:5000/auth/google/callback",
+  callbackURL: "https://nasa-server.onrender.com/auth/google/callback",
   userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
   scope: ['profile', 'email']
 },
@@ -72,7 +72,7 @@ passport.use(
     {
       clientID: process.env.CLIENT_ID,
       clientSecret: process.env.CLIENT_SECRET,
-      callbackURL: "http://localhost:5000/auth/google/register/callback",
+      callbackURL: "https://nasa-server.onrender.com/auth/google/register/callback",
       userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
       scope: ["profile", "email"],
     },
