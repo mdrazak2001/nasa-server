@@ -6,10 +6,7 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const router = require("express").Router();
-const userSchema = require("./models/user.model");
 const User = require("./models/user.model.js");
-const cookieParser = require('cookie-parser');
-const cookieSession = require("cookie-session");
 const MongoStore = require('connect-mongo');
 
 require("dotenv").config();
@@ -55,9 +52,8 @@ passport.use("google", new GoogleStrategy({
   scope: ['profile', 'email']
 },
 async function (accessToken, refreshToken, profile, done) {
+  // Find a user
   try {
-    console.log(profile);
-    // Find or create user in your database
     let user = await User.findOne({ googleId: profile.id });
     if (!user) {
       return done(null, user);
@@ -81,6 +77,7 @@ passport.use(
       scope: ["profile", "email"],
     },
     async (accessToken, refreshToken, profile, done) => {
+      // Find or create a user
       try {
         const user = await User.findOne({ googleId: profile.id  });
         if (user) {

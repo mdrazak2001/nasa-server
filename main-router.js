@@ -4,7 +4,7 @@ const User = require("./models/user.model.js");
 const passport = require("passport");
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const session = require('express-session');
+
 router.get('/', function(req, res) {
     res.send('Hello, world!');
 });
@@ -33,10 +33,11 @@ router.post('/registerUser', async function(req, res) {
         email: email,
         password: hashedPassword
     });
-    console.log(name, email, hashedPassword);
+    // console.log(name, email, hashedPassword);
     
     try {
       const savedUser = await user.save();
+      console.log('User registered successfully ', savedUser);
       const token = jwt.sign({ _id: user._id, name: user.name }, process.env.TOKEN_SECRET);
       res.json({ token: token });
 
@@ -66,9 +67,9 @@ router.post('/loginUser', async function(req, res) {
   console.log('Logged in successfully ', user);
   // Passwords match, so create and return a JWT token
   const token = jwt.sign({ _id: user._id }, process.env.TOKEN_SECRET);
-  // res.json({ token: token });
+
   return res.json({user: user, token: token});
-  // res.json({ message: 'Logged in successfully', user: user });
+
 });
 
 router.get("/auth/google",
@@ -82,7 +83,7 @@ router.get(
 router.get("/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "http://localhost:3000?failure=UserNotRegistered" }),
   async function(req, res) {
-    console.log("User idar:" + req.user)
+    // console.log("User idar:" + req.user)
     const existingUser = await User.findOne({ googleId: req.user.googleId });
     console.log("Existing user: " + existingUser);
     if (existingUser) {
@@ -98,7 +99,7 @@ router.get(
     failureRedirect: "http://localhost:3000?failure=ExistingUser",
   }),
   async function(req, res) {
-    console.log("User idar:" + req.user);
+    // console.log("User idar:" + req.user);
     const existingUser = await User.findOne({ googleId: req.user.googleId });
     const token = jwt.sign({ _id: existingUser._id }, process.env.TOKEN_SECRET);
     res.redirect("http://localhost:3000?user=" + existingUser.username+"&token="+token);
