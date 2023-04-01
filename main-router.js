@@ -33,14 +33,12 @@ router.post('/registerUser', async function(req, res) {
         email: email,
         password: hashedPassword
     });
-    // console.log(name, email, hashedPassword);
-    
     try {
       const savedUser = await user.save();
       console.log('User registered successfully ', savedUser);
       const token = jwt.sign({ _id: user._id, name: user.name }, process.env.TOKEN_SECRET);
-      res.json({ token: token });
-
+      res.json({ token: token, user: user });
+      console.log(user.name);
     } catch (err) {
       console.error(err);
       res.status(500).send('Error saving user');
@@ -54,7 +52,7 @@ router.post('/loginUser', async function(req, res) {
 
   if (!user) {
     // Return error message if user not found
-    return res.status(400).send('Invalid email or password');
+    return res.status(400).send('Invalid email');
   }
 
   // Use bcrypt.compare() to compare plain-text password with hashed password
@@ -62,7 +60,7 @@ router.post('/loginUser', async function(req, res) {
 
   if (!passwordMatch) {
     // Return error message if passwords don't match
-    return res.status(400).send('Invalid email or password');
+    return res.status(400).send('Invalid password');
   }
   console.log('Logged in successfully ', user);
   // Passwords match, so create and return a JWT token
